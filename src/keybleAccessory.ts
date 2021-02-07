@@ -57,16 +57,20 @@ export class KeybleAccessory {
 
     // register handlers for the CurrentPosition Characteristic
     this.service.getCharacteristic(this.platform.Characteristic.CurrentPosition)
-      .on('get', this.getCurrentPosition.bind(this));               // GET - bind to the `getOn` method below
+      .on('get', this.getCurrentPosition.bind(this));
 
     // register handlers for the State Characteristic
     this.service.getCharacteristic(this.platform.Characteristic.PositionState)
-      .on('get', this.getState.bind(this));       // SET - bind to the 'setBrightness` method below
+      .on('get', this.getState.bind(this));
 
     // register handlers for the TargetPosition Characteristic
     this.service.getCharacteristic(this.platform.Characteristic.TargetPosition)
       .on('get', this.getTargetPosition.bind(this))
       .on('set', this.setTargetPosition.bind(this));
+
+    // register handler for status changes from lock
+    this.lock
+      .on('status_change', this.onStatusChange.bind(this));
 
   }
 
@@ -108,7 +112,47 @@ export class KeybleAccessory {
    */
   setTargetPosition(value: CharacteristicValue, callback: CharacteristicSetCallback) {
     this.state.targetPosition = value as number;
-    this.platform.log.debug('Set Characteristic Brightness -> ', value);
+    this.platform.log.debug('Set Characteristic Target Position -> ', value);
+
+    if ( this.state.targetPosition != this.state.currentPosition ) {
+      if ( this.state.targetPosition > 0 ) {
+        this.lock.open();
+      } else {
+        this.lock.close();
+      }
+    }
+
     callback(null);
+  }
+
+  onStatusChange(newStatusId : number) {
+    switch(newStatusId) {
+      case 3: // LOCKED
+        this.state.targetPosition = 0;
+        this.state.currentPosition = 0;
+        this.state.movement = this.platform.Characteristic.PositionState.STOPPED;
+        break;
+      case 2: // UNLOCKED
+      case 4: // OPENED
+        this.state.targetPosition = 100;
+        this.state.currentPosition = 100;
+        this.state.movement = this.platform.Characteristic.PositionState.STOPPED;
+        break;
+      case 1: // MOVING
+        if (this.state.currentPosition > 0) {
+          this.state.targetPosition = 0;
+          this.state.movement = this.platform.Characteristic.PositionState.DECREASING;
+        } else {
+          this.state.targetPosition = 100;
+          this.state.movement = this.platform.Characteristic.PositionState.INCREASING;
+        }
+        break;
+      case 0: // UNKNOWN
+        this.platform.log.info("Lock state unknown");
+        break;
+      default:
+        this.platform.log.error("Received unkown state");
+        break;
+    }
   }
 }
