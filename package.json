@@ -1,0 +1,32 @@
+{
+  "name": "homebridge-keyble",
+  "version": "0.0.1",
+  "description": "HomeKit Support for Eqiva EQ3 Doorlocks",
+  "license": "MIT",
+  "keywords": [
+    "homebridge-plugin",
+    "keyble",
+    "eqiva",
+    "eq3"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/gothma/homebridge-keyble.git"
+  },
+  "bugs": {
+    "url": "https://github.com/gothma/homebridge-keyble/issues"
+  },
+  "engines": {
+    "node": ">=12.0.0",
+    "homebridge": "^1.1.0"
+  },
+  "dependencies": {
+    "keyble": "^0.1.14"
+  },
+  "homepage": "https://github.com/gothma/homebridge-keyble#readme",
+  "main": "index.js",
+  "scripts": {
+    "test": "standard"
+  },
+  "author": "ziisch"
+}
