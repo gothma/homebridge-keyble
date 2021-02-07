@@ -114,11 +114,11 @@ export class KeybleAccessory {
     this.state.targetPosition = value as number;
     this.platform.log.debug('Set Characteristic Target Position -> ', value);
 
-    if ( this.state.targetPosition != this.state.currentPosition ) {
+    if ( this.state.targetPosition > 0 != this.state.currentPosition > 0 ) {
       if ( this.state.targetPosition > 0 ) {
-        this.lock.open();
+        this.lock.unlock();
       } else {
-        this.lock.close();
+        this.lock.lock();
       }
     }
 
