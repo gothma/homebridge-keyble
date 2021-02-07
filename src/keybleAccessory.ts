@@ -2,6 +2,10 @@ import { Service, PlatformAccessory, CharacteristicValue, CharacteristicSetCallb
 
 import { KeyblePlatform } from './platform';
 
+import { Key_Ble } from "keyble";
+
+import { privateSettings } from './privateSettings'
+
 /**
  * Platform Accessory
  * An instance of this class is created for each accessory your platform registers
@@ -9,6 +13,7 @@ import { KeyblePlatform } from './platform';
  */
 export class KeybleAccessory {
   private service: Service;
+  private lock: Key_Ble;
 
   /**
    * These are just used to create a working example
@@ -24,6 +29,14 @@ export class KeybleAccessory {
     private readonly platform: KeyblePlatform,
     private readonly accessory: PlatformAccessory,
   ) {
+
+    this.lock = new Key_Ble({
+      address: privateSettings.address,
+      user_id: privateSettings.user,
+      user_key: privateSettings.key,
+      auto_disconnect_time: 15,
+      status_update_time: 600
+    })
 
     // set accessory information
     this.accessory.getService(this.platform.Service.AccessoryInformation)!
