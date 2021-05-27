@@ -71,7 +71,7 @@ export class KeybleAccessory {
       .setProps({
         minValue: Position.Lock,
         minStep: Position.Unlock,
-        maxValue: Position.Open
+        maxValue: Position.Unlock
       });
     
     this.service.getCharacteristic(this.platform.Characteristic.TargetPosition)
@@ -139,25 +139,37 @@ export class KeybleAccessory {
   setTargetPosition(value: CharacteristicValue, callback: CharacteristicSetCallback) {
 
     if ( this.state.targetPosition != value ) {
+      this.state.targetPosition = value as number;
+
       this.platform.log.debug('Set Characteristic Target Position -> ', value);
       switch(value) {
         case Position.Open:
           this.platform.log.debug('Open')
-          this.lock.open();
+          this.state.movement = this.platform.Characteristic.PositionState.INCREASING;
+          this.lock.open()
+          .catch((error) => {this.onError(error);});
           break;
         case Position.Unlock:
           this.platform.log.debug('Unlock')
-          this.lock.unlock();
+          this.state.movement = this.platform.Characteristic.PositionState.INCREASING;
+          this.lock.unlock()
+          .catch((error) => {this.onError(error);});
           break;
         case Position.Lock:
           this.platform.log.debug('Lock')
-          this.lock.lock();
+          this.state.movement = this.platform.Characteristic.PositionState.DECREASING;
+          this.lock.lock()
+          .catch((error) => {this.onError(error);});
       }
     }
 
-    this.state.targetPosition = value as number;
 
     callback(null);
+  }
+
+  onError(error: string) {
+    this.lock.request_status();
+    this.platform.log.error(error);
   }
 
   onStatusChange(newStatusId : number) {
