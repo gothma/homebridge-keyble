@@ -29,9 +29,11 @@ sudo service homebridge restart
 ### Useful dev resources
 
 * [Homebridge Plugin Template](https://github.com/homebridge/homebridge-plugin-template)
+* [Homebridge API Characteristics](https://developers.homebridge.io/#/api/characteristics)
 
 ### Known Issues
 
+* Keyble unhandled promise
 * VSCode linting does not see homebridge
 * Lock status updates are not forwarded to Homebridge
 * Allow only available lock states in HomeKit

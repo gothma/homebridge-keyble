@@ -8,6 +8,12 @@ import { privateSettings } from './privateSettings';
 
 import { gitDescribeSync } from "git-describe";
 
+enum Position {
+  Lock = 0,
+  Unlock = 1,
+  Open = 2
+}
+
 /**
  * Platform Accessory
  * An instance of this class is created for each accessory your platform registers
@@ -26,6 +32,8 @@ export class KeybleAccessory {
     movement: this.platform.Characteristic.PositionState.STOPPED,
     targetPosition: 0
   };
+
+
 
   constructor(
     private readonly platform: KeyblePlatform,
@@ -58,6 +66,20 @@ export class KeybleAccessory {
 
     // each service must implement at-minimum the "required characteristics" for the given service type
     // see https://developers.homebridge.io/#/service/Door
+
+    this.service.getCharacteristic(this.platform.Characteristic.CurrentPosition)
+      .setProps({
+        minValue: Position.Lock,
+        minStep: Position.Unlock,
+        maxValue: Position.Open
+      });
+    
+    this.service.getCharacteristic(this.platform.Characteristic.TargetPosition)
+      .setProps({
+        minValue: Position.Lock,
+        minStep: Position.Unlock,
+        maxValue: Position.Open
+      });
 
     // register handlers for the CurrentPosition Characteristic
     this.service.getCharacteristic(this.platform.Characteristic.CurrentPosition)
@@ -115,32 +137,25 @@ export class KeybleAccessory {
    * These are sent when the user changes the state of an accessory, for example, changing the Brightness
    */
   setTargetPosition(value: CharacteristicValue, callback: CharacteristicSetCallback) {
-    var targetValue = 0 as number;
-    if ( value > 66 ) {
-      targetValue = 100;
-    } else if ( targetValue > 33 ) {
-      targetValue = 66;
-    } else {
-      targetValue = 0;
-    }
-    this.state.targetPosition = targetValue as number;
-    this.platform.log.debug('Set Characteristic Target Position -> ', value);
 
-    if ( this.state.targetPosition != targetValue ) {
-      switch(targetValue) {
-        case 100:
+    if ( this.state.targetPosition != value ) {
+      this.platform.log.debug('Set Characteristic Target Position -> ', value);
+      switch(value) {
+        case Position.Open:
           this.platform.log.debug('Open')
           this.lock.open();
           break;
-        case 66:
+        case Position.Unlock:
           this.platform.log.debug('Unlock')
           this.lock.unlock();
           break;
-        case 0:
+        case Position.Lock:
           this.platform.log.debug('Lock')
           this.lock.lock();
       }
     }
+
+    this.state.targetPosition = value as number;
 
     callback(null);
   }
@@ -148,23 +163,21 @@ export class KeybleAccessory {
   onStatusChange(newStatusId : number) {
     switch(newStatusId) {
       case 3: // LOCKED
-        this.state.targetPosition = 0;
-        this.state.currentPosition = 0;
+        this.state.targetPosition = Position.Lock;
+        this.state.currentPosition = Position.Lock;
         this.state.movement = this.platform.Characteristic.PositionState.STOPPED;
         break;
       case 2: // UNLOCKED
       case 4: // OPENED
-        this.state.targetPosition = 100;
-        this.state.currentPosition = 100;
+        this.state.targetPosition = Position.Unlock;
+        this.state.currentPosition = Position.Unlock;
         this.state.movement = this.platform.Characteristic.PositionState.STOPPED;
         break;
       case 1: // MOVING
-        if (this.state.currentPosition > 0) {
-          this.state.targetPosition = 0;
-          this.state.movement = this.platform.Characteristic.PositionState.DECREASING;
-        } else {
-          this.state.targetPosition = 100;
+        if (this.state.targetPosition > Position.Lock) {
           this.state.movement = this.platform.Characteristic.PositionState.INCREASING;
+        } else {
+          this.state.movement = this.platform.Characteristic.PositionState.DECREASING;
         }
         break;
       case 0: // UNKNOWN
