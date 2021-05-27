@@ -28,6 +28,7 @@
     "test": "standard"
   },
   "dependencies": {
+    "git-describe": "^4.0.4",
     "keyble": "^0.1.14"
   },
   "devDependencies": {

@@ -4,7 +4,9 @@ import { KeyblePlatform } from './platform';
 
 import { Key_Ble } from "keyble";
 
-import { privateSettings } from './privateSettings'
+import { privateSettings } from './privateSettings';
+
+import { gitDescribeSync } from "git-describe";
 
 /**
  * Platform Accessory
@@ -37,6 +39,8 @@ export class KeybleAccessory {
       auto_disconnect_time: 15,
       status_update_time: 600
     })
+
+    this.platform.log.info('Homebridge Keyble: ', gitDescribeSync(__dirname).raw);
 
     // set accessory information
     this.accessory.getService(this.platform.Service.AccessoryInformation)!
