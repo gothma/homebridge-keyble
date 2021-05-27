@@ -115,14 +115,30 @@ export class KeybleAccessory {
    * These are sent when the user changes the state of an accessory, for example, changing the Brightness
    */
   setTargetPosition(value: CharacteristicValue, callback: CharacteristicSetCallback) {
-    this.state.targetPosition = value as number;
+    var targetValue = 0 as number;
+    if ( value > 66 ) {
+      targetValue = 100;
+    } else if ( targetValue > 33 ) {
+      targetValue = 66;
+    } else {
+      targetValue = 0;
+    }
+    this.state.targetPosition = targetValue as number;
     this.platform.log.debug('Set Characteristic Target Position -> ', value);
 
-    if ( this.state.targetPosition > 0 != this.state.currentPosition > 0 ) {
-      if ( this.state.targetPosition > 0 ) {
-        this.lock.unlock();
-      } else {
-        this.lock.lock();
+    if ( this.state.targetPosition != targetValue ) {
+      switch(targetValue) {
+        case 100:
+          this.platform.log.debug('Open')
+          this.lock.open();
+          break;
+        case 66:
+          this.platform.log.debug('Unlock')
+          this.lock.unlock();
+          break;
+        case 0:
+          this.platform.log.debug('Lock')
+          this.lock.lock();
       }
     }
 
