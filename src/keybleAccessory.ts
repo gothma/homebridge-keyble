@@ -1,10 +1,6 @@
 import { Service, PlatformAccessory, CharacteristicValue, CharacteristicSetCallback, CharacteristicGetCallback } from 'homebridge';
-
 import { KeyblePlatform } from './platform';
-
 import { Key_Ble } from "keyble";
-
-import { privateSettings } from './privateSettings';
 
 enum Position {
   Lock = 0,
@@ -40,9 +36,9 @@ export class KeybleAccessory {
   ) {
 
     this.lock = new Key_Ble({
-      address: privateSettings.address,
-      user_id: privateSettings.user,
-      user_key: privateSettings.key,
+      address: accessory.context.config.address,
+      user_id: accessory.context.config.user,
+      user_key: accessory.context.config.key,
       auto_disconnect_time: 15,
       status_update_time: 600
     })
@@ -59,7 +55,7 @@ export class KeybleAccessory {
 
     // set the service name, this is what is displayed as the default name on the Home app
     // in this example we are using the name we stored in the `accessory.context` in the `discoverDevices` method.
-    this.service.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.exampleDisplayName);
+    this.service.setCharacteristic(this.platform.Characteristic.Name, accessory.context.config.name);
 
     // each service must implement at-minimum the "required characteristics" for the given service type
     // see https://developers.homebridge.io/#/service/Door
