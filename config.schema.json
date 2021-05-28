@@ -1,16 +1,54 @@
 {
-  "pluginAlias": "keyblePlatform",
+  "pluginAlias": "keyble",
   "pluginType": "platform",
   "singular": true,
   "schema": {
+    "definitions": {
+      "lock_obj": {
+        "type": "object",
+        "title": "Lock",
+        "properties": {
+            "name": {
+              "title": "Name",
+              "type": "string",
+              "placeholder": "My Key-BLE Lock",
+              "maxLength": 64,
+              "required": true
+          },
+          "address": {
+              "title": "MAC Address",
+              "type": "string",
+              "pattern": "^[a-f0-9]{2}(:[a-f0-9]{2}){5}$",
+              "maxLength": 17,
+              "placeholder": "xx:xx:xx:xx:xx:xx",
+              "required": true
+          },
+          "key": {
+              "title": "User Key",
+              "type": "string",
+              "pattern": "^[a-f0-9]{32}$",
+              "maxLength": 32,
+              "placeholder": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+              "required": true
+          },
+          "user": {
+              "title": "User ID",
+              "type": "number",
+              "maximum": 64,
+              "default": "0",
+              "required": true
+          }
+        }
+      }
+    },
     "type": "object",
     "properties": {
-      "name": {
-        "title": "Name",
-        "type": "string",
-        "required": true,
-        "default": "Example Dynamic Platform"
+      "locks": {
+        "title": "Key-BLE Locks",
+        "type": "array",
+        "items": { "$ref": "#/definitions/lock_obj", "extendRefs": true }
       }
-    }
+    },
+    "required": [ "locks" ]
   }
 }

@@ -35,13 +35,16 @@ sudo service homebridge restart
 
 ### 0.0.1
 
+* Set/update new status to homebridge depending if it is expected
 * Retrieve current status at initialization
 * Set private settings through Homebridge
 
+
 ### Known Issues
 
-* Handle "UNKNOWN" status response
 * Handle keyble timeouts (unresolved promises)
+* Use traditional setProps as Siri/Homekit does not understand custom setProps
+* Handle "UNKNOWN" status response
 * Improve reaction delay
     * Keep-alive bluetooth connection
     * Use async
@@ -52,7 +55,6 @@ sudo service homebridge restart
     * Description
     * Install instructions
     * Pairing instructions
-* Set/update new status to homebridge depending if it is expected
 * Retrieve lock information from lock
 * Display battery life
 * Turn lock specific number of times
