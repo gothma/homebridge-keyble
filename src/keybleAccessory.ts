@@ -8,8 +8,9 @@ import { privateSettings } from './privateSettings';
 
 enum Position {
   Lock = 0,
-  Unlock = 1,
-  Open = 2
+  Unlock = 2,
+  Open = 3,
+  Unlock_MinStep = 1
 }
 
 /**
@@ -26,9 +27,9 @@ export class KeybleAccessory {
    * You should implement your own code to track the state of your accessory
    */
   private state = {
-    currentPosition: 0,
+    currentPosition: Position.Lock,
     movement: this.platform.Characteristic.PositionState.STOPPED,
-    targetPosition: 0
+    targetPosition: Position.Lock
   };
 
 
@@ -66,14 +67,14 @@ export class KeybleAccessory {
     this.service.getCharacteristic(this.platform.Characteristic.CurrentPosition)
       .setProps({
         minValue: Position.Lock,
-        minStep: Position.Unlock,
+        minStep: Position.Unlock_MinStep,
         maxValue: Position.Unlock
       });
     
     this.service.getCharacteristic(this.platform.Characteristic.TargetPosition)
       .setProps({
         minValue: Position.Lock,
-        minStep: Position.Unlock,
+        minStep: Position.Unlock_MinStep,
         maxValue: Position.Open
       });
 
@@ -92,7 +93,8 @@ export class KeybleAccessory {
 
     // register handler for status changes from lock
     this.lock
-      .on('status_change', this.onStatusChange.bind(this));
+      .on('status_change', this.handleStatusChange.bind(this));
+    this.lock.request_status();
 
   }
 
@@ -132,30 +134,35 @@ export class KeybleAccessory {
    * Handle "SET" requests from HomeKit
    * These are sent when the user changes the state of an accessory, for example, changing the Brightness
    */
-  setTargetPosition(value: CharacteristicValue, callback: CharacteristicSetCallback) {
+  async setTargetPosition(value: CharacteristicValue, callback: CharacteristicSetCallback) {
 
     if ( this.state.targetPosition != value ) {
       this.state.targetPosition = value as number;
+      await this.lock.ensure_connected();
 
-      this.platform.log.debug('Set Characteristic Target Position -> ', value);
+      this.platform.log.info('Set Characteristic Target Position -> ', value);
       switch(value) {
         case Position.Open:
           this.platform.log.debug('Open')
           this.state.movement = this.platform.Characteristic.PositionState.INCREASING;
           this.lock.open()
-          .catch((error) => {this.onError(error);});
+          .then(() => {this.updateCurrentPosition(value);})
+          .catch((error) => {this.handleLockError(error);});
           break;
         case Position.Unlock:
+        case Position.Unlock_MinStep:
           this.platform.log.debug('Unlock')
           this.state.movement = this.platform.Characteristic.PositionState.INCREASING;
           this.lock.unlock()
-          .catch((error) => {this.onError(error);});
+          .then(() => {this.updateCurrentPosition(value);})
+          .catch((error) => {this.handleLockError(error);});
           break;
         case Position.Lock:
           this.platform.log.debug('Lock')
           this.state.movement = this.platform.Characteristic.PositionState.DECREASING;
           this.lock.lock()
-          .catch((error) => {this.onError(error);});
+          .then(() => {this.updateCurrentPosition(value);})
+          .catch((error) => {this.handleLockError(error);});
       }
     }
 
@@ -163,13 +170,25 @@ export class KeybleAccessory {
     callback(null);
   }
 
-  onError(error: string) {
+  /* Meant to be called with then after operating the lock
+   * This probably can be replaced by handleStatusChange
+   */
+  updateCurrentPosition(position: Position) {
+    this.platform.log.debug('updateCurrentPosition -> ', position)
+    this.service.getCharacteristic(this.platform.Characteristic.CurrentPosition)
+      .setValue(Math.min(position, Position.Unlock));
+    this.service.getCharacteristic(this.platform.Characteristic.PositionState)
+      .setValue(this.platform.Characteristic.PositionState.STOPPED);
+  }
+
+  handleLockError(error: any) {
     this.lock.request_status();
     this.platform.log.error(error);
   }
 
-  onStatusChange(newStatus : any) {
+  handleStatusChange(newStatus : any) {
     const newStatusId = newStatus.lock_status_id as number;
+    this.platform.log.debug('Status update: ', newStatus.lock_status);
     switch(newStatusId) {
       case 3: // LOCKED
         this.state.targetPosition = Position.Lock;
@@ -196,5 +215,14 @@ export class KeybleAccessory {
         this.platform.log.error("Received unkown state: ", newStatus);
         break;
     }
+
+    // Update homebridge values
+    this.service.getCharacteristic(this.platform.Characteristic.CurrentPosition)
+    .updateValue(this.state.currentPosition);
+    this.service.getCharacteristic(this.platform.Characteristic.TargetPosition)
+    .updateValue(this.state.targetPosition);
+    this.service.getCharacteristic(this.platform.Characteristic.PositionState)
+    .updateValue(this.state.movement);
+
   }
 }

@@ -48,6 +48,11 @@ sudo service homebridge restart
 
 ### Feature Backlog
 
+* README
+    * Description
+    * Install instructions
+    * Pairing instructions
+* Set/update new status to homebridge depending if it is expected
 * Retrieve lock information from lock
 * Display battery life
 * Turn lock specific number of times
