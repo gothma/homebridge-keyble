@@ -1,6 +1,6 @@
 {
   "name": "homebridge-keyble",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "HomeKit Support for Eqiva EQ3 Doorlocks",
   "license": "MIT",
   "keywords": [
