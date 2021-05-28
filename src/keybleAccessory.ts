@@ -168,7 +168,8 @@ export class KeybleAccessory {
     this.platform.log.error(error);
   }
 
-  onStatusChange(newStatusId : number) {
+  onStatusChange(newStatus : any) {
+    const newStatusId = newStatus.lock_status_id as number;
     switch(newStatusId) {
       case 3: // LOCKED
         this.state.targetPosition = Position.Lock;
@@ -189,10 +190,10 @@ export class KeybleAccessory {
         }
         break;
       case 0: // UNKNOWN
-        this.platform.log.info("Lock state unknown");
+        this.platform.log.info("Lock reports state unknown");
         break;
       default:
-        this.platform.log.error("Received unkown state");
+        this.platform.log.error("Received unkown state: ", newStatus);
         break;
     }
   }
