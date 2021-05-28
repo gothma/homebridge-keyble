@@ -37,7 +37,7 @@ export class KeyblePlatform implements DynamicPlatformPlugin {
    * This function is invoked when homebridge restores cached accessories from disk at startup.
    * It should be used to setup event handlers for characteristics and update respective values.
    */
-  configureAccessory(accessory: PlatformAccessory) {
+  configureAccessory(accessory: PlatformAccessory): void {
     this.log.info('Loading accessory from cache:', accessory.displayName);
 
     // add the restored accessory to the accessories cache so we can track if it has already been registered
@@ -49,19 +49,18 @@ export class KeyblePlatform implements DynamicPlatformPlugin {
    * Accessories must only be registered once, previously created accessories
    * must not be registered again to prevent "duplicate UUID" errors.
    */
-  discoverDevices(devices) {
-
+  discoverDevices(devices: Array<{address:string, name:string, uuid:string}>): void {
     // loop over the discovered devices and register each one if it has not already been registered
     for (const device of devices) {
 
       // generate a unique id for the accessory this should be generated from
       // something globally unique, but constant, for example, the device serial
       // number or MAC address
-      const uuid = this.api.hap.uuid.generate(device.address);
+      device.uuid = this.api.hap.uuid.generate(device.address);
 
       // see if an accessory with the same uuid has already been registered and restored from
       // the cached devices we stored in the `configureAccessory` method above
-      const existingAccessory = this.accessories.find(accessory => accessory.UUID === uuid);
+      const existingAccessory = this.accessories.find(accessory => accessory.UUID === device.uuid);
 
       if (existingAccessory) {
         // The device already exists
@@ -82,7 +81,7 @@ export class KeyblePlatform implements DynamicPlatformPlugin {
         this.log.info('Adding new accessory:', device.name);
 
         // create a new accessory
-        const accessory = new this.api.platformAccessory(device.name, uuid);
+        const accessory = new this.api.platformAccessory(device.name, device.uuid);
 
         // store a copy of the device object in the `accessory.context`
         // the `context` property can be used to store any data about the accessory you may need
@@ -100,7 +99,7 @@ export class KeyblePlatform implements DynamicPlatformPlugin {
     // Loop over cached accessories and remove them if the were not registered
     for (const accessory of this.accessories) {
       const existingConfig = devices.find(
-        device => this.api.hap.uuid.generate(device.address) === accessory.UUID );
+        device => device.uuid === accessory.UUID );
       if (!existingConfig) {
           // it is possible to remove platform accessories at any time using `api.unregisterPlatformAccessories`, eg.:
           // remove platform accessories when no longer present

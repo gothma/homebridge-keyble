@@ -44,10 +44,12 @@ export class KeybleAccessory {
     })
 
     // set accessory information
-    this.accessory.getService(this.platform.Service.AccessoryInformation)!
-      .setCharacteristic(this.platform.Characteristic.Manufacturer, 'eqiva')
+    const accessoryService = this.accessory.getService(this.platform.Service.AccessoryInformation);
+    if (accessoryService) {
+      accessoryService.setCharacteristic(this.platform.Characteristic.Manufacturer, 'eqiva')
       .setCharacteristic(this.platform.Characteristic.Model, 'eq3')
       .setCharacteristic(this.platform.Characteristic.SerialNumber, 'Default-Serial');
+    }
 
     // get the Door service if it exists, otherwise create a new Door service
     // you can create multiple services for each accessory
@@ -108,21 +110,21 @@ export class KeybleAccessory {
    * this.service.updateCharacteristic(this.platform.Characteristic.On, true)
    */
 
-  getCurrentPosition(callback: CharacteristicGetCallback) {
+  getCurrentPosition(callback: CharacteristicGetCallback): void {
     const currentPosition = this.state.currentPosition;
-    this.platform.log.debug('Get Characteristic Current Position ->', currentPosition)
+    this.platform.log.debug('Get Characteristic Current Position ->', currentPosition);
     callback(null, currentPosition);
   }
 
-  getState(callback: CharacteristicGetCallback) {
+  getState(callback: CharacteristicGetCallback): void {
     const movement = this.state.movement;
-    this.platform.log.debug('Get Characteristic State ->', movement)
+    this.platform.log.debug('Get Characteristic State ->', movement);
     callback(null, movement);
   }
 
-  getTargetPosition(callback: CharacteristicGetCallback) {
+  getTargetPosition(callback: CharacteristicGetCallback): void {
     const targetPosition = this.state.targetPosition;
-    this.platform.log.debug('Get Characteristic Target Position ->', targetPosition)
+    this.platform.log.debug('Get Characteristic Target Position ->', targetPosition);
     callback(null, targetPosition);
   }
 
@@ -130,11 +132,11 @@ export class KeybleAccessory {
    * Handle "SET" requests from HomeKit
    * These are sent when the user changes the state of an accessory, for example, changing the Brightness
    */
-  async setTargetPosition(value: CharacteristicValue, callback: CharacteristicSetCallback) {
+  setTargetPosition(value: CharacteristicValue, callback: CharacteristicSetCallback): void {
 
     if ( this.state.targetPosition != value ) {
       this.state.targetPosition = value as number;
-      await this.lock.ensure_connected();
+      this.lock.ensure_connected();
 
       this.platform.log.info('Set Characteristic Target Position -> ', value);
       switch(value) {
@@ -161,15 +163,13 @@ export class KeybleAccessory {
           .catch((error) => {this.handleLockError(error);});
       }
     }
-
-
     callback(null);
   }
 
   /* Meant to be called with then after operating the lock
    * This probably can be replaced by handleStatusChange
    */
-  updateCurrentPosition(position: Position) {
+  updateCurrentPosition(position: Position): void {
     this.platform.log.debug('updateCurrentPosition -> ', position)
     this.service.getCharacteristic(this.platform.Characteristic.CurrentPosition)
       .setValue(Math.min(position, Position.Unlock));
@@ -177,15 +177,14 @@ export class KeybleAccessory {
       .setValue(this.platform.Characteristic.PositionState.STOPPED);
   }
 
-  handleLockError(error: any) {
+  handleLockError(error: string): void {
     this.lock.request_status();
     this.platform.log.error(error);
   }
 
-  handleStatusChange(newStatus : any) {
-    const newStatusId = newStatus.lock_status_id as number;
+  handleStatusChange(newStatus : {lock_status_id: number, lock_status: string}): void {
     this.platform.log.debug('Status update: ', newStatus.lock_status);
-    switch(newStatusId) {
+    switch(newStatus.lock_status_id) {
       case 3: // LOCKED
         this.state.targetPosition = Position.Lock;
         this.state.currentPosition = Position.Lock;
@@ -219,6 +218,5 @@ export class KeybleAccessory {
     .updateValue(this.state.targetPosition);
     this.service.getCharacteristic(this.platform.Characteristic.PositionState)
     .updateValue(this.state.movement);
-
   }
 }
